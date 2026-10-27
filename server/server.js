@@ -1,21 +1,30 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const express = require("express");
+const { clerkMiddleware } = require("@clerk/express");
 const cors = require("cors");
 const connectDB = require("./src/config/db.js");
+const clerkWebhookRouter = require("./src/routes/clerkWebhookRoutes.js");
 const app = express();
 connectDB();
 
 app.use(cors());
+app.use("/api/clerk", clerkWebhookRouter);
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ verify: (req, buf) => {
-        req.rawBody = buf;
-    }}));
-const port= process.env.PORT || 3000;
+app.use(
+  express.json({
+    verify: (req, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
+app.use(clerkMiddleware());
 
-app.get("/",(req,res)=>{
-    res.send("Hello World!");
-})
-app.listen(port,()=>{
-    console.log(`Server is running on port ${port}`);
-})
+const port = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
