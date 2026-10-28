@@ -55,7 +55,9 @@ export default function Sidebar({
 
       // Default to the first workspace if none is currently selected
 
-      setSelectedWorkspace((prev) => (prev?.id ? prev : workspaceDetails[0] || null));
+      setSelectedWorkspace((prev) =>
+        prev?.id ? prev : workspaceDetails[0] || null,
+      );
     } catch (err) {
       console.error(
         "Failed to fetch workspace details:",
@@ -78,8 +80,15 @@ export default function Sidebar({
   const handleWorkspaceChange = (workspace) => {
     setSelectedWorkspace(workspace);
     setIsWorkspaceDropdownOpen(false);
-    if (onSelectWorkspace) onSelectWorkspace(workspace);
   };
+
+  const sendSelectedWorkspaceData = () => {
+    onSelectWorkspace(selectedWorkspace);
+  };
+
+  useEffect(() => {
+    sendSelectedWorkspaceData();
+  }, [selectedWorkspace]);
 
   return (
     <aside
@@ -147,7 +156,12 @@ export default function Sidebar({
                     onClick={() => handleWorkspaceChange(ws)}
                     className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
                   >
-                    <span className="truncate">{ws.name}</span>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className="truncate">{ws.name}</span>
+                      <span className="text-xs text-gray-500 text-center px-2 bg-gray-100 rounded-full shrink-0">
+                        {ws.role}
+                      </span>
+                    </div>
                     {selectedWorkspace.id === ws.id && (
                       <Check className="w-3.5 h-3.5 text-gray-900" />
                     )}
@@ -201,7 +215,7 @@ export default function Sidebar({
               }`}
             >
               <Icon
-                className={`w-[17px] h-[17px] shrink-0 transition-colors ${
+                className={`w-4.25 h-4.25 shrink-0 transition-colors ${
                   isActive
                     ? "text-gray-900"
                     : "text-gray-600 group-hover:text-gray-900"
@@ -226,14 +240,14 @@ export default function Sidebar({
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <CheckSquare
-              className={`w-[17px] h-[17px] shrink-0 transition-colors ${
+              className={`w-4.25 h-4.25 shrink-0 transition-colors ${
                 activeItem === "my-tasks"
                   ? "text-gray-900"
                   : "text-gray-600 group-hover:text-gray-900"
               }`}
             />
             <span className="truncate">My Tasks</span>
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium text-gray-600 bg-gray-200/80 rounded min-w-[19px] leading-none">
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium text-gray-600 bg-gray-200/80 rounded min-w-4.75 leading-none">
               {taskCount}
             </span>
           </div>
@@ -307,7 +321,7 @@ export default function Sidebar({
             routing="hash"
             afterCreateOrganizationUrl={() => {
               setShowCreateOrg(false);
-              setSelectedWorkspace()
+              setSelectedWorkspace();
               handleWorkspaceDetails(); // Refresh list after creation
             }}
           />

@@ -6,6 +6,7 @@ const cors = require("cors");
 const connectDB = require("./src/config/db.js");
 const clerkWebhookRouter = require("./src/routes/clerkWebhookRoutes.js");
 const workspaceDetailsRouter = require("./src/routes/workspaceDetailsRoute.js");
+const projectRouter = require("./src/routes/projectRoutes.js");
 const app = express();
 connectDB();
 
@@ -31,6 +32,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/details", workspaceDetailsRouter);
+app.use("/api/workspaces",projectRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
