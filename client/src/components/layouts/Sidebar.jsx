@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { useAuth } from "@clerk/react";
-import SignInOverlay from '../auth/SigninOverlay';
+import { useState, useEffect } from "react";
+import { CreateOrganization, useAuth } from "@clerk/react";
+import SignInOverlay from "../auth/SigninOverlay";
+import API from "../../api/axios";
 import {
   LayoutGrid,
   Folder,
@@ -12,31 +13,62 @@ import {
   ArrowRight,
   Plus,
   Check,
-} from 'lucide-react';
+  Layers,
+  X,
+} from "lucide-react";
 
 export default function Sidebar({
-  currentWorkspace = '',
-  workspaces = [],
-  defaultActive = 'dashboard',
+  defaultActive = "dashboard",
   taskCount = 0,
   projects = [],
   onSelectNav,
   onSelectWorkspace,
   onAddProject,
-  className = '',
+  className = "",
 }) {
-  const { isSignedIn } = useAuth();
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
+  const { isSignedIn, getToken } = useAuth();
   const [activeItem, setActiveItem] = useState(defaultActive);
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
-  const [selectedWorkspace, setSelectedWorkspace] = useState(currentWorkspace);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [showSignInOverlay, setShowSignInOverlay] = useState(false);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { id: 'projects', label: 'Projects', icon: Folder },
-    { id: 'team', label: 'Team', icon: Users },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: "dashboard", label: "Dashboard", icon: LayoutGrid },
+    { id: "projects", label: "Projects", icon: Folder },
+    { id: "team", label: "Team", icon: Users },
+    { id: "settings", label: "Settings", icon: Settings },
   ];
+
+  const handleWorkspaceDetails = async () => {
+    try {
+      const token = await getToken();
+      const response = await API.get(`/details/workspace`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const workspaceDetails = response.data.workspaces;
+      console.log(workspaceDetails);
+      setWorkspaces(workspaceDetails);
+
+      // Default to the first workspace if none is currently selected
+
+      setSelectedWorkspace((prev) => (prev?.id ? prev : workspaceDetails[0] || null));
+    } catch (err) {
+      console.error(
+        "Failed to fetch workspace details:",
+        err.response?.data || err.message,
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (isSignedIn) {
+      handleWorkspaceDetails();
+    }
+  }, [isSignedIn]);
 
   const handleNavClick = (id) => {
     setActiveItem(id);
@@ -63,23 +95,35 @@ export default function Sidebar({
           <div className="flex items-center gap-3 min-w-0">
             {/* workspace Brand Icon / Logo Box */}
             <div className="w-10 h-10 rounded-xl bg-gray-200 border border-gray-200/80 flex items-center justify-center p-0.5 shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers preview-icon"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>
+              {selectedWorkspace === null ? (
+                <Layers className="w-7 h-7 object-cover rounded-lg" />
+              ) : (
+                <img
+                  src={selectedWorkspace.image_url}
+                  alt="logo"
+                  className="w-7 h-7 object-cover rounded-lg"
+                />
+              )}
             </div>
 
             {/* Workspace info */}
             <div className="min-w-0 leading-tight">
               <p className="text-[14px] font-semibold text-gray-900 truncate tracking-tight">
-                {(workspaces.length==0)?'No Workspace':selectedWorkspace.name}
+                {workspaces.length == 0
+                  ? "Select Workspace"
+                  : selectedWorkspace.name}
               </p>
               <p className="text-[11.5px] text-gray-400 font-normal mt-0.5">
-                {(workspaces.length==0)?'0 workspace':selectedWorkspace.workspacesCount+' workspaces'}
+                {workspaces.length == 0
+                  ? "0 workspace"
+                  : workspaces.length + " workspaces"}
               </p>
             </div>
           </div>
 
           <ChevronDown
             className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 mr-1 ${
-              isWorkspaceDropdownOpen ? 'rotate-180 text-gray-600' : ''
+              isWorkspaceDropdownOpen ? "rotate-180 text-gray-600" : ""
             }`}
           />
         </button>
@@ -95,7 +139,8 @@ export default function Sidebar({
               <div className="px-3 py-1.5 text-[10.5px] font-semibold text-gray-400 uppercase tracking-wider">
                 Workspaces
               </div>
-              {(workspaces.length!==0)?workspaces.map((ws) => (
+              {workspaces.length !== 0 ? (
+                workspaces.map((ws) => (
                   <button
                     key={ws.id}
                     type="button"
@@ -107,10 +152,12 @@ export default function Sidebar({
                       <Check className="w-3.5 h-3.5 text-gray-900" />
                     )}
                   </button>
-                )):
+                ))
+              ) : (
                 <div className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-700 transition-colors text-left">
-                    <span className="truncate">No Workspace created</span>
-                </div>}
+                  <span className="truncate">No Workspace created</span>
+                </div>
+              )}
               <div className="border-t border-gray-100 my-1" />
               <button
                 type="button"
@@ -120,7 +167,8 @@ export default function Sidebar({
                     setShowSignInOverlay(true);
                     return;
                   }
-                  if (onSelectWorkspace) onSelectWorkspace('new');
+
+                  setShowCreateOrg(true);
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer"
               >
@@ -148,15 +196,15 @@ export default function Sidebar({
               onClick={() => handleNavClick(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium transition-colors text-left cursor-pointer group ${
                 isActive
-                  ? 'bg-gray-100 text-gray-900 font-semibold'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/80'
+                  ? "bg-gray-100 text-gray-900 font-semibold"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50/80"
               }`}
             >
               <Icon
                 className={`w-[17px] h-[17px] shrink-0 transition-colors ${
                   isActive
-                    ? 'text-gray-900'
-                    : 'text-gray-600 group-hover:text-gray-900'
+                    ? "text-gray-900"
+                    : "text-gray-600 group-hover:text-gray-900"
                 }`}
               />
               <span className="truncate">{item.label}</span>
@@ -169,19 +217,19 @@ export default function Sidebar({
       <div className="pt-8 px-2.5">
         <button
           type="button"
-          onClick={() => handleNavClick('my-tasks')}
+          onClick={() => handleNavClick("my-tasks")}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13.5px] font-medium transition-colors text-left cursor-pointer group ${
-            activeItem === 'my-tasks'
-              ? 'bg-gray-100 text-gray-900 font-semibold'
-              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+            activeItem === "my-tasks"
+              ? "bg-gray-100 text-gray-900 font-semibold"
+              : "text-gray-700 hover:text-gray-900 hover:bg-gray-50/80"
           }`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <CheckSquare
               className={`w-[17px] h-[17px] shrink-0 transition-colors ${
-                activeItem === 'my-tasks'
-                  ? 'text-gray-900'
-                  : 'text-gray-600 group-hover:text-gray-900'
+                activeItem === "my-tasks"
+                  ? "text-gray-900"
+                  : "text-gray-600 group-hover:text-gray-900"
               }`}
             />
             <span className="truncate">My Tasks</span>
@@ -220,13 +268,13 @@ export default function Sidebar({
                 onClick={() => handleNavClick(`project-${proj.id}`)}
                 className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors text-left cursor-pointer ${
                   activeItem === `project-${proj.id}`
-                    ? 'bg-gray-100 text-gray-900 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: proj.color || '#6366F1' }}
+                  style={{ backgroundColor: proj.color || "#6366F1" }}
                 />
                 <span className="truncate text-xs font-medium">
                   {proj.name}
@@ -239,7 +287,32 @@ export default function Sidebar({
 
       {/* Flexible bottom filler */}
       <div className="flex-1" />
-
+      {showCreateOrg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCreateOrg(false);
+          }}
+        >
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowCreateOrg(false)}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <CreateOrganization
+            routing="hash"
+            afterCreateOrganizationUrl={() => {
+              setShowCreateOrg(false);
+              setSelectedWorkspace()
+              handleWorkspaceDetails(); // Refresh list after creation
+            }}
+          />
+        </div>
+      )}
       {/* Fullscreen Sign-in Overlay for signed-out users */}
       {showSignInOverlay && !isSignedIn && (
         <SignInOverlay onClose={() => setShowSignInOverlay(false)} />
