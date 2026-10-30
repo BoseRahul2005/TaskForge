@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/react";
 import { LoaderCircle } from "lucide-react";
 
-const ProjectInfoForm = ({ onClose, workspace }) => {
+const CreateProjectForm = ({ onClose, workspace, onProjectCreated }) => {
   const {getToken}= useAuth();
   const {
     register,
@@ -28,17 +28,22 @@ const ProjectInfoForm = ({ onClose, workspace }) => {
   const onSubmit = async(data) => {
     try{
       const token = await getToken();
-      const response = await API.post(`/workspaces/${workspace.id}/projects`,data,{
+      const [response] = await Promise.all([API.post(`/workspaces/${workspace?.id}/projects`,data,{
         headers:{
           Authorization: `Bearer ${token}`,
         },
-      });
+      }),new Promise((resolve) => setTimeout(resolve, 1500))]);
 
       if(response?.data?.success){
         setShowSuccess(true);
+        if (onProjectCreated) onProjectCreated();
         setTimeout(() => {
           setShowSuccess(false);
         }, 3000);
+
+        setTimeout(()=>{
+        window.location.reload()
+      },2000);
       }
     }catch(err){
       console.log(err);
@@ -224,11 +229,11 @@ const ProjectInfoForm = ({ onClose, workspace }) => {
             <button
               type="submit"
               disabled={isSubmitting||showSuccess}
-              className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting?(
                 <>
-                <LoaderCircle className="animate-spin" size={20} />
+                <LoaderCircle className="animate-spin" size={15} />
                 <span> Creating...</span>
                 </>
               ):showSuccess?(
@@ -244,4 +249,4 @@ const ProjectInfoForm = ({ onClose, workspace }) => {
   );
 };
 
-export default ProjectInfoForm;
+export default CreateProjectForm;

@@ -108,7 +108,7 @@ const deleteProject= async(req,res)=>{
         if(!projectId || !mongoose.Types.ObjectId.isValid(projectId)){
             return res.status(404).json({success:false,message:"Project is not valid"});
         }
-        const deletedProject = await Project.findByIdAndDelete(projectId);
+        await Project.findByIdAndDelete(projectId);
         return res.status(200).json({ success: true, message: "Project deleted successfully." });
     }catch(err){
         console.log(err);

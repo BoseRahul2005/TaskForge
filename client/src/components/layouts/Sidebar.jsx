@@ -90,9 +90,15 @@ export default function Sidebar({
     sendSelectedWorkspaceData();
   }, [selectedWorkspace]);
 
+  useEffect(() => {
+    if (defaultActive) {
+      setActiveItem(defaultActive);
+    }
+  }, [defaultActive]);
+
   return (
     <aside
-      className={`w-60 h-screen bg-white border-r border-gray-200/90 flex flex-col font-sans select-none ${className}`}
+      className={`w-60 h-screen bg-white border-r border-gray-200/90 flex flex-col font-sans select-none ${className} fixed`}
     >
       {/* Workspace Selector */}
       <div className="relative px-3.5 py-3.5">
@@ -104,7 +110,7 @@ export default function Sidebar({
           <div className="flex items-center gap-3 min-w-0">
             {/* workspace Brand Icon / Logo Box */}
             <div className="w-10 h-10 rounded-xl bg-gray-200 border border-gray-200/80 flex items-center justify-center p-0.5 shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              {selectedWorkspace === null ? (
+              {!selectedWorkspace?.image_url ? (
                 <Layers className="w-7 h-7 object-cover rounded-lg" />
               ) : (
                 <img
@@ -120,7 +126,7 @@ export default function Sidebar({
               <p className="text-[14px] font-semibold text-gray-900 truncate tracking-tight">
                 {workspaces.length == 0
                   ? "Select Workspace"
-                  : selectedWorkspace.name}
+                  : selectedWorkspace?.name || "Select Workspace"}
               </p>
               <p className="text-[11.5px] text-gray-400 font-normal mt-0.5">
                 {workspaces.length == 0
@@ -162,7 +168,7 @@ export default function Sidebar({
                         {ws.role}
                       </span>
                     </div>
-                    {selectedWorkspace.id === ws.id && (
+                    {selectedWorkspace?.id === ws.id && (
                       <Check className="w-3.5 h-3.5 text-gray-900" />
                     )}
                   </button>
